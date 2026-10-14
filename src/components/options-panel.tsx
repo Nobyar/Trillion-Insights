@@ -5,15 +5,17 @@ import type { ExpirationView, OptionsView } from "@/lib/types";
 export function OptionsPanel({
   options,
   priceCurrency = "USD",
+  heading = "Options · next five expirations",
 }: {
   options: OptionsView;
   priceCurrency?: string;
+  heading?: string;
 }) {
   const nearest = options.expirations[0];
   const showForward = options.expirations.some((row) => row.forward != null);
   return (
     <section>
-      <h2 className="section-label">Options · next five expirations</h2>
+      <h2 className="section-label">{heading}</h2>
       {options.note ? <p className="takeaway">{options.note}</p> : null}
       {options.status === "ready" ? (
         <>

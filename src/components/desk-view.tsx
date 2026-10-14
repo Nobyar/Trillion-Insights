@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { accentFor, Mast } from "@/components/frames";
+import { OptionsPanel } from "@/components/options-panel";
+import { IBIT_OPTIONS_HEADING } from "@/lib/options";
 import {
   formatChange,
   formatMoney,
@@ -40,30 +42,33 @@ export function DeskView({ desk }: { desk: DeskData }) {
       />
       {universe.error ? <p className="note">{universe.error}</p> : null}
       <main>
-        <section className="stack" aria-labelledby="bitcoin-heading">
+        <section aria-labelledby="bitcoin-heading">
           <h2 id="bitcoin-heading" className="section-label">
             Bitcoin
           </h2>
-          {bitcoin ? (
-            <Link className="card" href="/bitcoin" style={{ ["--accent" as string]: accentFor("BTC") }}>
-              <p className="symbol">BTC</p>
-              <p className="name">Bitcoin · not a company · {bitcoin.source}</p>
-              <div className="price-row">
-                <span className="spot">{formatPrice(bitcoin.price, "USD")}</span>
-                <Change pct={bitcoin.changePct} />
-              </div>
-              <p className="name">
-                {formatMoney(bitcoin.marketCapUsd)} market cap · {lineGap(bitcoin.marketCapUsd)}
-              </p>
-              {bitcoinRank ? (
-                <p className="takeaway" style={{ marginTop: 12 }}>
-                  {bitcoinRank.sentence}
+          <div className="stack">
+            {bitcoin ? (
+              <Link className="card" href="/bitcoin" style={{ ["--accent" as string]: accentFor("BTC") }}>
+                <p className="symbol">BTC</p>
+                <p className="name">Bitcoin · not a company · {bitcoin.source}</p>
+                <div className="price-row">
+                  <span className="spot">{formatPrice(bitcoin.price, "USD")}</span>
+                  <Change pct={bitcoin.changePct} />
+                </div>
+                <p className="name">
+                  {formatMoney(bitcoin.marketCapUsd)} market cap · {lineGap(bitcoin.marketCapUsd)}
                 </p>
-              ) : null}
-            </Link>
-          ) : (
-            <p className="note">{bitcoinError}</p>
-          )}
+                {bitcoinRank ? (
+                  <p className="takeaway" style={{ marginTop: 12 }}>
+                    {bitcoinRank.sentence}
+                  </p>
+                ) : null}
+              </Link>
+            ) : (
+              <p className="note">{bitcoinError}</p>
+            )}
+          </div>
+          <OptionsPanel options={desk.bitcoinOptions} heading={IBIT_OPTIONS_HEADING} />
         </section>
 
         <section className="stack" aria-labelledby="companies-heading">
