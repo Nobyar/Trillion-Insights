@@ -1,3 +1,11 @@
+import {
+  credentialMode,
+  DudeDiligenceLoginError,
+  getSiteSession,
+  invalidateSiteSession,
+  overrideHeaders,
+  sessionHeaderAttempts,
+} from "@/lib/dudediligence-session";
 import { formatExpiry, formatWhen } from "@/lib/format";
 import type { ExpirationView, OptionsView, StrikeRow } from "@/lib/types";
 
@@ -201,16 +209,30 @@ async function loadCatalog(): Promise<Catalog> {
   }
 }
 
-function sessionHeaders(): { headers: HeadersInit; configured: boolean } {
-  const headers: Record<string, string> = {
-    Accept: "application/json",
-    "User-Agent": "TrillionInsights/1.0",
-  };
-  const cookie = process.env.DUDEDILIGENCE_COOKIE?.trim();
-  const authorization = process.env.DUDEDILIGENCE_AUTHORIZATION?.trim();
-  if (cookie) headers.Cookie = cookie;
-  if (authorization) headers.Authorization = authorization;
-  return { headers, configured: Boolean(cookie || authorization) };
+const API_HEADERS = {
+  Accept: "application/json",
+  "User-Agent": "TrillionInsights/1.0",
+};
+
+async function fetchBoard(
+  symbol: string,
+  attempts: Record<string, string>[],
+): Promise<Response | null> {
+  let last: Response | null = null;
+  for (const extra of attempts) {
+    last = await fetch(`${ORIGIN}/v1/options/gex/${encodeURIComponent(symbol)}?expiries=5`, {
+      headers: { ...API_HEADERS, ...extra },
+      cache: "no-store",
+    });
+    if (last.status !== 401 && last.status !== 403) return last;
+  }
+  return last;
+}
+
+async function boardAttempts(force = false): Promise<Record<string, string>[]> {
+  const override = overrideHeaders();
+  if (override) return [override];
+  return sessionHeaderAttempts(await getSiteSession(force));
 }
 
 function boardLink(symbol: string): string {
@@ -220,8 +242,10 @@ function boardLink(symbol: string): string {
 /**
  * Next five expirations from DudeDiligence's gamma board.
  * `/v1/options/meta` is public. `/v1/options/gex/{symbol}` returns 401
- * unless the request carries a signed-in session. robots.txt disallows
- * crawling `/v1/`, so the chain is requested only when a session is configured.
+ * unless the request carries a signed-in session. The server signs in with
+ * DUDEDILIGENCE_EMAIL and DUDEDILIGENCE_PASSWORD when those are set, and
+ * retries once after a 401. Cookie and Authorization env vars override that.
+ * robots.txt disallows crawling `/v1/`.
  */
 export async function loadOptions(
   listingSymbol: string,
@@ -264,26 +288,46 @@ export async function loadOptions(
     };
   }
 
-  const session = sessionHeaders();
   const asOf = entry.asOf ? formatWhen(entry.asOf) : "the latest session";
-  if (!session.configured) {
+  const mode = credentialMode();
+  if (mode === "none") {
     return {
       ...base,
       status: "needs-session",
-      message: `DudeDiligence lists ${symbol} in the public catalog. The last snapshot is ${asOf}. Strikes and gamma for the next five expirations are GET /v1/options/gex/${symbol}?expiries=5, which answers 401 without a signed-in session. Set DUDEDILIGENCE_COOKIE or DUDEDILIGENCE_AUTHORIZATION locally, or the same names in the Vercel project environment, then refresh. The chain is not filled in from anywhere else.`,
+      message: `DudeDiligence lists ${symbol} in the public catalog. The last snapshot is ${asOf}. Strikes and gamma for the next five expirations need a signed-in account. Set DUDEDILIGENCE_EMAIL and DUDEDILIGENCE_PASSWORD on the server (Vercel → Settings → Environment Variables, then redeploy) and the server signs in by itself. DUDEDILIGENCE_COOKIE and DUDEDILIGENCE_AUTHORIZATION remain optional overrides. The chain is not filled in from anywhere else.`,
+    };
+  }
+  if (mode === "incomplete") {
+    return {
+      ...base,
+      status: "needs-session",
+      message: `DudeDiligence lists ${symbol}, snapshot ${asOf}, but the sign-in pair is incomplete. Set both DUDEDILIGENCE_EMAIL (or DUDEDILIGENCE_USERNAME) and DUDEDILIGENCE_PASSWORD, then redeploy. The chain is not filled in from anywhere else.`,
     };
   }
 
   try {
-    const res = await fetch(
-      `${ORIGIN}/v1/options/gex/${encodeURIComponent(symbol)}?expiries=5`,
-      { headers: session.headers, cache: "no-store" },
-    );
+    const attempts = await boardAttempts();
+    let res = await fetchBoard(symbol, attempts);
+    if (!res) {
+      return {
+        ...base,
+        status: "error",
+        message: `No DudeDiligence session headers were available for ${symbol}.`,
+      };
+    }
+    if ((res.status === 401 || res.status === 403) && mode === "password") {
+      invalidateSiteSession();
+      const retry = await boardAttempts(true);
+      res = (await fetchBoard(symbol, retry)) ?? res;
+    }
     if (res.status === 401 || res.status === 403) {
       return {
         ...base,
         status: "rejected",
-        message: `DudeDiligence refused the session (${res.status}). Sign in on the site, copy a fresh cookie into DUDEDILIGENCE_COOKIE, and refresh. Catalog snapshot: ${asOf}.`,
+        message:
+          mode === "override"
+            ? `DudeDiligence refused the DUDEDILIGENCE_COOKIE / DUDEDILIGENCE_AUTHORIZATION override (${res.status}). Paste a fresh session, or remove the override and set DUDEDILIGENCE_EMAIL and DUDEDILIGENCE_PASSWORD. Catalog snapshot: ${asOf}.`
+            : `DudeDiligence refused the signed-in session (${res.status}) after an automatic re-login. Catalog snapshot: ${asOf}.`,
       };
     }
     if (res.status === 404) {
@@ -320,8 +364,18 @@ export async function loadOptions(
       message: `Next ${board.expirations.length} expirations from DudeDiligence${board.asOf ? `, as of ${formatWhen(board.asOf)}` : ""}. Net gamma is the site's dollar figure per 1% move.`,
     };
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Options request failed.";
-    return { ...base, status: "error", message };
+    if (error instanceof DudeDiligenceLoginError) {
+      return {
+        ...base,
+        status: "rejected",
+        message: `${error.message} Catalog snapshot: ${asOf}.`,
+      };
+    }
+    return {
+      ...base,
+      status: "error",
+      message: "The DudeDiligence options request failed before a board came back.",
+    };
   }
 }
 
