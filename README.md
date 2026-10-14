@@ -11,7 +11,7 @@ npm run dev
 
 The dev server prints a local URL. `npm run build` then `npm start` runs the production server.
 
-Copy `.env.example` to `.env.local` only if you want DudeDiligence options chains. Quotes, headlines, and Bitcoin work with no keys.
+Copy `.env.example` to `.env.local` only if you want DudeDiligence options chains. The server signs in when `DUDEDILIGENCE_EMAIL` and `DUDEDILIGENCE_PASSWORD` are set. Quotes, headlines, and Bitcoin work with no keys.
 
 ## What Trillion Insights does
 
@@ -22,7 +22,7 @@ Each company page has:
 - the live price, change, and dollar market cap
 - a facts panel from Yahoo Finance: headquarters, chief executive, employees, sector, revenue, net income, margins, P/E, 52-week range, dividend, and the business description when Yahoo returns them
 - a news blurb built from the latest Yahoo Finance headlines, plus the headlines
-- options for the next five expirations, from DudeDiligence when a session is configured
+- options for the next five expirations, from DudeDiligence when the server can sign in
 - a short history of how the company got to a trillion-dollar valuation, and a market-cap chart
 
 Bitcoin has the same sections. Its options are the **IBIT** (iShares Bitcoin Trust) board, which is the contract DudeDiligence lists for bitcoin. Spot BTC is not an options underlying there.
@@ -39,7 +39,7 @@ Bitcoin has the same sections. Its options are the **IBIT** (iShares Bitcoin Tru
 | Bitcoin live price, market cap, 24h change, and the Facts & figures panel (height, hashrate, difficulty, supply and percent mined, halving, fees, mempool, nodes, transactions) | [timechainstats.com](https://timechainstats.com/) via the public Sidewinder snapshots and Diamondback routes that board loads. CoinGecko, then CoinPaprika, only if the price and market cap fail | None. The server reads the public page key at runtime. `TIMECHAIN_API_KEY` is optional and must not be committed. |
 | Bitcoin market-cap history | [Blockchain.com charts](https://api.blockchain.info/charts/market-cap?timespan=all&format=json&sampled=true). Timechain Stats publishes a price history, not this market-cap series | None |
 | Options catalog | `GET https://dudediligence.club/v1/options/meta` | None. Public, cached about ten minutes. |
-| Options chain | `GET https://dudediligence.club/v1/options/gex/{SYMBOL}?expiries=5` | Session. See below. |
+| Options chain | `GET https://dudediligence.club/v1/options/gex/{SYMBOL}?expiries=5` | Server sign-in. See below. |
 
 Pages cache for about a minute (`cacheLife("minutes")`), then refresh in the background. The Refresh button expires that cache immediately.
 
@@ -72,39 +72,56 @@ What is not public:
 - The same client calls `/v1/options/gex/{SYMBOL}/history`, `/at/{time}`, `/live`, and `POST /v1/options/refresh/{SYMBOL}`. Those are the same gated family.
 - The logged-out HTML does not include strikes, expirations, or gamma. There is nothing honest to scrape off the page.
 
-Trillion Insights reads the public catalog so it can say whether a symbol is covered, and it shows that catalog on the page: kind, last update, and session date. It calls the gamma route only when you set a session:
+Sign-in is Auth0 Universal Login (the page titled “Log in | Dudediligence”), not a cookie you paste from your browser. The public app rejects Auth0’s password grant and cross-origin login, so the server posts the username and password form itself, exchanges the authorization code, and calls `POST /v1/session` with the ID token. It keeps that session in memory and signs in again when the token is close to expiry or the gamma route answers 401.
+
+Set these two variables. The sign-in form labels the first field **Username**. Put that value in `DUDEDILIGENCE_EMAIL` (the account email, when that is the username). `DUDEDILIGENCE_USERNAME` is accepted only when `DUDEDILIGENCE_EMAIL` is empty.
 
 ```bash
-DUDEDILIGENCE_COOKIE="paste the Cookie header from a signed-in request"
-# or
-DUDEDILIGENCE_AUTHORIZATION="Bearer …"
+DUDEDILIGENCE_EMAIL="the Username from the sign-in form"
+DUDEDILIGENCE_PASSWORD="the account password"
 ```
 
-Sign in at [dudediligence.club](https://dudediligence.club), open DevTools on a gamma request, and copy the cookie. Put it in `.env.local`. Do not commit it. Restart the server, or use Refresh.
+Do not commit either value. Restart the server, or use Refresh.
 
-### Setting the session on Vercel
+If either `DUDEDILIGENCE_COOKIE` or `DUDEDILIGENCE_AUTHORIZATION` is set, automatic login is skipped and those headers are sent instead. Leave them unset unless you need to bypass the form.
 
-The five-expiry board is empty in production until the same variables exist on the Vercel project. In the Vercel dashboard open the project, then **Settings → Environment Variables**, and add:
+### Setting this on Vercel
 
-| Name | Value |
-| --- | --- |
-| `DUDEDILIGENCE_COOKIE` | The full `Cookie` header from a signed-in gamma request. Sensitive. |
-| `DUDEDILIGENCE_AUTHORIZATION` | Optional. The full `Authorization` header, including `Bearer `, if that is what the session uses instead of a cookie. |
+The five-expiry board stays on the public catalog until these variables exist on the Vercel project. Open the project, then **Settings → Environment Variables**, and add:
 
-Enable them for Production, and for Preview if you want the board on preview deployments. Save, then redeploy. Vercel does not pick up new environment variables until the next deployment. Do not paste the cookie into the repo, a pull request, or a build log.
+| Name | Required | Value |
+| --- | --- | --- |
+| `DUDEDILIGENCE_EMAIL` | Yes, for automatic sign-in | The Username from the DudeDiligence / Auth0 sign-in form. Use the account email when that is the username. |
+| `DUDEDILIGENCE_PASSWORD` | Yes, for automatic sign-in | The password for that account. Mark it Sensitive. |
+| `DUDEDILIGENCE_USERNAME` | No | Same Username field. Used only when `DUDEDILIGENCE_EMAIL` is empty. |
+| `DUDEDILIGENCE_COOKIE` | No | Optional override. Full `Cookie` header from a signed-in gamma request. If set, the server does not log in. |
+| `DUDEDILIGENCE_AUTHORIZATION` | No | Optional override. Full `Authorization` header, including `Bearer `. If set, the server does not log in. |
+
+Enable `DUDEDILIGENCE_EMAIL` and `DUDEDILIGENCE_PASSWORD` for Production, and for Preview if you want the board on preview deployments. Save, then redeploy. Vercel does not pick up new environment variables until the next deployment. Do not paste the password, cookie, or token into the repo, a pull request, or a build log.
+
+What automatic login cannot do:
+
+- Auth0 captcha or bot detection (reCAPTCHA, hCaptcha, Arkose, Turnstile, or an “AnomalyDetected” block). The login form did not show a captcha when this was built. If Auth0 turns one on, sign-in fails and the page keeps the DudeDiligence link.
+- Auth0 MFA, email codes, or a passkey prompt on the Auth0 page. DudeDiligence also offers passkeys after you are signed in; those are WebAuthn and stay in the browser.
+- A Google-only account. “Continue with Google” cannot be completed from the server.
+- A password the form rejects. The page says so, and still links to the board.
 
 `TIMECHAIN_API_KEY` is optional. Leave it unset and the server reads the public key from the timechainstats.com page script. Set it on Vercel only if you want to skip that lookup. Mark it sensitive and do not commit it.
 
 The parser expects the board the site's own client reads: `by_expiry` (or `expiries` / `per_expiry`, including a nested `levels` object) with `net_gex`, `call_wall`, `put_wall`, `gex_flip` / `zero_gamma`, `forward`, and optional `strikes` (`call_gex`, `put_gex`, `call_oi`, `put_oi`). Net gamma is labeled as that site's dollar figure per 1% move. If the JSON shape changes, the page says the board came back without rows instead of inventing strikes.
 
-Without a session, every covered name still shows the options section, the catalog time, the exact URL, and the env vars. Names the catalog does not list say that plainly. No strikes are filled in from somewhere else.
+Without a working sign-in, every covered name still shows the options section, the catalog time, the exact URL, and why the chain is missing. Names the catalog does not list say that plainly. No strikes are filled in from somewhere else.
 
 ## Environment
 
 | Variable | Required | Purpose |
 | --- | --- | --- |
-| `DUDEDILIGENCE_COOKIE` | No | Cookie header from a signed-in DudeDiligence session. Unlocks the five-expiry board. |
-| `DUDEDILIGENCE_AUTHORIZATION` | No | Alternative `Authorization` header, including the `Bearer ` prefix if that is what the session uses. |
+| `DUDEDILIGENCE_EMAIL` | For options chains | Username from the DudeDiligence sign-in form. Often the account email. |
+| `DUDEDILIGENCE_PASSWORD` | For options chains | Password for that account. The server signs in and refreshes the session on its own. |
+| `DUDEDILIGENCE_USERNAME` | No | Same username field, used only when `DUDEDILIGENCE_EMAIL` is empty. |
+| `DUDEDILIGENCE_COOKIE` | No | Optional override. Skips automatic login. |
+| `DUDEDILIGENCE_AUTHORIZATION` | No | Optional override. Full `Authorization` value, including `Bearer `. Skips automatic login. |
+| `TIMECHAIN_API_KEY` | No | Skips the public timechainstats.com key lookup. |
 
 ## Fonts
 
