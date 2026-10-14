@@ -1,5 +1,5 @@
 import { expiryLabel } from "@/lib/options";
-import { formatCount, formatMoney, formatPrice } from "@/lib/format";
+import { formatCount, formatMoney, formatPrice, formatWhen } from "@/lib/format";
 import type { ExpirationView, OptionsView } from "@/lib/types";
 
 export function OptionsPanel({
@@ -10,6 +10,7 @@ export function OptionsPanel({
   priceCurrency?: string;
 }) {
   const nearest = options.expirations[0];
+  const showForward = options.expirations.some((row) => row.forward != null);
   return (
     <section>
       <h2 className="section-label">Options · next five expirations</h2>
@@ -31,6 +32,7 @@ export function OptionsPanel({
                 <th>Call wall</th>
                 <th>Call OI</th>
                 <th>Put OI</th>
+                {showForward ? <th>Forward</th> : null}
               </tr>
             </thead>
             <tbody>
@@ -54,6 +56,9 @@ export function OptionsPanel({
                   <td data-label="Put OI">
                     {row.putOi == null ? "—" : formatCount(row.putOi)}
                   </td>
+                  {showForward ? (
+                    <td data-label="Forward">{strike(row.forward, priceCurrency)}</td>
+                  ) : null}
                 </tr>
               ))}
             </tbody>
@@ -71,6 +76,8 @@ export function OptionsPanel({
                         <th>Net</th>
                         <th>Call</th>
                         <th>Put</th>
+                        <th>Call OI</th>
+                        <th>Put OI</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -88,6 +95,12 @@ export function OptionsPanel({
                           <td data-label="Put">
                             {strikeRow.put == null ? "—" : formatMoney(strikeRow.put)}
                           </td>
+                          <td data-label="Call OI">
+                            {strikeRow.callOi == null ? "—" : formatCount(strikeRow.callOi)}
+                          </td>
+                          <td data-label="Put OI">
+                            {strikeRow.putOi == null ? "—" : formatCount(strikeRow.putOi)}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -98,14 +111,47 @@ export function OptionsPanel({
           ) : null}
         </>
       ) : (
-        <p className={options.status === "error" || options.status === "rejected" ? "note error" : "note"}>
-          {options.message}{" "}
-          {options.link ? (
-            <a href={options.link}>Open the board on DudeDiligence.</a>
-          ) : null}
-        </p>
+        <>
+          <CatalogFacts options={options} />
+          <p className={options.status === "error" || options.status === "rejected" ? "note error" : "note"}>
+            {options.message}{" "}
+            {options.link ? (
+              <a href={options.link}>Open the board on DudeDiligence.</a>
+            ) : null}
+          </p>
+        </>
       )}
     </section>
+  );
+}
+
+function CatalogFacts({ options }: { options: OptionsView }) {
+  const cells: Array<{ label: string; value: string }> = [
+    {
+      label: "Board",
+      value: options.catalogLabel
+        ? `${options.boardSymbol} · ${options.catalogLabel}`
+        : options.boardSymbol,
+    },
+  ];
+  if (options.catalogKind) cells.push({ label: "Kind", value: options.catalogKind });
+  if (options.catalogAsOf) {
+    cells.push({ label: "Catalog updated", value: formatWhen(options.catalogAsOf) });
+  }
+  if (options.sessionDate) cells.push({ label: "Session", value: options.sessionDate });
+  if (options.sessionsBehind != null) {
+    cells.push({ label: "Sessions behind", value: String(options.sessionsBehind) });
+  }
+  if (cells.length < 2) return null;
+  return (
+    <dl className="levels">
+      {cells.map((cell) => (
+        <div key={cell.label}>
+          <dt>{cell.label}</dt>
+          <dd>{cell.value}</dd>
+        </div>
+      ))}
+    </dl>
   );
 }
 

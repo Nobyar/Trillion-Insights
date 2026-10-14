@@ -3,15 +3,21 @@ import { accentFor, Mast } from "@/components/frames";
 import { NewsPanel } from "@/components/news-panel";
 import { OptionsPanel } from "@/components/options-panel";
 import {
+  formatAmount,
   formatChange,
+  formatDay,
+  formatInteger,
   formatMoney,
+  formatMultiple,
   formatPrice,
+  formatRatioPct,
   formatWhen,
   lineGap,
   rankLabel,
   TRILLION,
 } from "@/lib/format";
 import type { CompanyPage } from "@/lib/load";
+import type { CompanyFacts } from "@/lib/types";
 
 export function CompanyView({ page }: { page: CompanyPage }) {
   const { quote, profile, universe } = page;
@@ -58,6 +64,7 @@ export function CompanyView({ page }: { page: CompanyPage }) {
           </dl>
         </article>
 
+        <FactsPanel facts={page.facts} />
         <NewsPanel news={page.news} />
         <OptionsPanel options={page.options} priceCurrency={quote.currency === "USD" ? "USD" : "USD"} />
 
@@ -102,4 +109,94 @@ export function CompanyView({ page }: { page: CompanyPage }) {
       </main>
     </>
   );
+}
+
+function FactsPanel({ facts }: { facts: CompanyFacts }) {
+  const cells = factCells(facts);
+  return (
+    <section>
+      <h2 className="section-label">Facts & figures</h2>
+      {facts.error && !cells.length ? <p className="note">{facts.error}</p> : null}
+      {cells.length ? (
+        <dl className="levels">
+          {cells.map((cell) => (
+            <div key={cell.label}>
+              <dt>{cell.label}</dt>
+              <dd>{cell.value}</dd>
+            </div>
+          ))}
+        </dl>
+      ) : null}
+      {facts.business ? (
+        <div className="prose" style={{ marginTop: 16 }}>
+          <p>{facts.business}</p>
+        </div>
+      ) : null}
+      <p className="fine">
+        {facts.asOf
+          ? `Data: Yahoo Finance, most recent quarter ${formatDay(facts.asOf)}.`
+          : "Data: Yahoo Finance."}
+      </p>
+    </section>
+  );
+}
+
+function factCells(facts: CompanyFacts): Array<{ label: string; value: string }> {
+  const cells: Array<{ label: string; value: string }> = [];
+  if (facts.headquarters) cells.push({ label: "Headquarters", value: facts.headquarters });
+  if (facts.ceo) cells.push({ label: "Chief executive", value: facts.ceo });
+  if (facts.employees != null) {
+    cells.push({ label: "Employees", value: formatInteger(facts.employees) });
+  }
+  if (facts.sector) cells.push({ label: "Sector", value: facts.sector });
+  if (facts.industry && facts.industry !== facts.sector) {
+    cells.push({ label: "Industry", value: facts.industry });
+  }
+  if (facts.revenue != null) {
+    cells.push({
+      label: "Revenue",
+      value: formatAmount(facts.revenue, facts.reportCurrency),
+    });
+  }
+  if (facts.netIncome != null) {
+    cells.push({
+      label: "Net income",
+      value: formatAmount(facts.netIncome, facts.reportCurrency),
+    });
+  }
+  if (facts.grossMargin != null) {
+    cells.push({ label: "Gross margin", value: formatRatioPct(facts.grossMargin) });
+  }
+  if (facts.operatingMargin != null) {
+    cells.push({ label: "Operating margin", value: formatRatioPct(facts.operatingMargin) });
+  }
+  if (facts.profitMargin != null) {
+    cells.push({ label: "Profit margin", value: formatRatioPct(facts.profitMargin) });
+  }
+  if (facts.trailingPe != null) {
+    cells.push({ label: "Trailing P/E", value: formatMultiple(facts.trailingPe) });
+  }
+  if (facts.forwardPe != null) {
+    cells.push({ label: "Forward P/E", value: formatMultiple(facts.forwardPe) });
+  }
+  if (facts.weekLow != null && facts.weekHigh != null) {
+    cells.push({
+      label: "52-week range",
+      value: `${formatPrice(facts.weekLow, facts.priceCurrency)} – ${formatPrice(facts.weekHigh, facts.priceCurrency)}`,
+    });
+  }
+  const dividend = dividendLabel(facts);
+  if (dividend) cells.push({ label: "Dividend", value: dividend });
+  return cells;
+}
+
+function dividendLabel(facts: CompanyFacts): string | null {
+  const parts: string[] = [];
+  if (facts.dividendRate != null && facts.dividendRate > 0) {
+    parts.push(`${formatPrice(facts.dividendRate, facts.priceCurrency)} a year`);
+  }
+  if (facts.dividendYield != null && facts.dividendYield > 0) {
+    parts.push(`${formatRatioPct(facts.dividendYield)} yield`);
+  }
+  return parts.length ? parts.join(" · ") : null;
 }

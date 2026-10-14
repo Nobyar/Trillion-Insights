@@ -31,7 +31,7 @@ export async function loadScaledSeries(
   try {
     const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?range=max&interval=1mo`;
     const res = await fetch(url, {
-      headers: { "User-Agent": "Mozilla/5.0 (compatible; TrillionDesk/1.0)" },
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; TrillionInsights/1.0)" },
       cache: "no-store",
     });
     if (!res.ok) throw new Error(`Price history answered ${res.status}.`);
@@ -72,14 +72,16 @@ type BlockchainChart = {
   values?: Array<{ x: number; y: number }>;
 };
 
-export async function loadBitcoinSeries(liveCap: number | null): Promise<HistorySeries> {
-  const caption =
-    "Dollar market cap of coins in circulation, from Blockchain.com, sampled down to one point a month and drawn on a log scale. The last point is the live CoinGecko cap when that quote loaded.";
+export async function loadBitcoinSeries(
+  liveCap: number | null,
+  liveSource = "the live quote",
+): Promise<HistorySeries> {
+  const caption = `Dollar market cap of coins in circulation, from Blockchain.com, sampled down to one point a month and drawn on a log scale. Timechain Stats publishes the live cap and a price history, not this market-cap series, so the chart stays on Blockchain.com. The last point is the live cap from ${liveSource} when that quote loaded.`;
   try {
     const res = await fetch(
       "https://api.blockchain.info/charts/market-cap?timespan=all&format=json&sampled=true",
       {
-        headers: { "User-Agent": "Mozilla/5.0 (compatible; TrillionDesk/1.0)" },
+        headers: { "User-Agent": "Mozilla/5.0 (compatible; TrillionInsights/1.0)" },
         cache: "no-store",
       },
     );

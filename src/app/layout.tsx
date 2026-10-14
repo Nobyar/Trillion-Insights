@@ -23,8 +23,8 @@ const plex = IBM_Plex_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Trillion desk",
-    template: "%s · Trillion desk",
+    default: "Trillion Insights",
+    template: "%s · Trillion Insights",
   },
   description:
     "Public companies above a $1 trillion market cap, with Bitcoin beside them: live caps, headlines, options, and how each one got there.",

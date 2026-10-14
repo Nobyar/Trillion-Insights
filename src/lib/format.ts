@@ -90,3 +90,57 @@ export function lineGap(marketCapUsd: number): string {
 export function rankLabel(index: number): string {
   return String(index + 1).padStart(2, "0");
 }
+
+export function formatInteger(n: number): string {
+  return new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(n);
+}
+
+export function formatBtc(n: number): string {
+  return `${formatInteger(n)} BTC`;
+}
+
+export function formatHashrate(ehs: number): string {
+  const digits = ehs >= 100 ? 0 : 1;
+  const formatted = new Intl.NumberFormat("en-US", {
+    maximumFractionDigits: digits,
+    minimumFractionDigits: 0,
+  }).format(ehs);
+  return `${formatted} EH/s`;
+}
+
+export function formatCompact(n: number): string {
+  const abs = Math.abs(n);
+  const sign = n < 0 ? "−" : "";
+  if (abs >= 1e12) return `${sign}${(abs / 1e12).toFixed(2)}T`;
+  if (abs >= 1e9) return `${sign}${(abs / 1e9).toFixed(2)}B`;
+  if (abs >= 1e6) return `${sign}${(abs / 1e6).toFixed(2)}M`;
+  return formatInteger(n);
+}
+
+export function formatSatVb(n: number): string {
+  const digits = n >= 10 ? 0 : 1;
+  return `${n.toFixed(digits)} sat/vB`;
+}
+
+export function formatAmount(value: number, currency: string): string {
+  const body = formatMoney(value).replace(/^\$/, "");
+  if (!currency || currency === "USD") return formatMoney(value);
+  return `${body} ${currency}`;
+}
+
+export function formatRatioPct(ratio: number): string {
+  return `${(ratio * 100).toFixed(2)}%`;
+}
+
+export function formatMultiple(n: number): string {
+  const digits = Math.abs(n) >= 100 ? 0 : 1;
+  return `${n.toFixed(digits)}×`;
+}
+
+export function formatBytes(n: number): string {
+  const abs = Math.abs(n);
+  if (abs >= 1e9) return `${(n / 1e9).toFixed(2)} GB`;
+  if (abs >= 1e6) return `${(n / 1e6).toFixed(1)} MB`;
+  if (abs >= 1e3) return `${(n / 1e3).toFixed(0)} KB`;
+  return `${Math.round(n)} B`;
+}

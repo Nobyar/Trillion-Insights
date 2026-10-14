@@ -7,7 +7,7 @@ import { loadDesk } from "@/lib/load";
 export default function Page() {
   return (
     <PageFrame>
-      <Suspense fallback={<p className="loading">Loading the desk…</p>}>
+      <Suspense fallback={<p className="loading">Loading Trillion Insights…</p>}>
         <DeskBody />
       </Suspense>
     </PageFrame>

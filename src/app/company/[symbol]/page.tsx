@@ -16,7 +16,7 @@ export async function generateMetadata({
   const ticker = fromSlug(symbol);
   return {
     title: ticker,
-    description: `${ticker} on the trillion desk: live market cap, headlines, options, and history.`,
+    description: `${ticker} on Trillion Insights: live market cap, company facts, headlines, options, and history.`,
   };
 }
 
@@ -47,7 +47,7 @@ async function CompanyBody({ symbol }: { symbol: string }) {
         <p className="kicker">Missing</p>
         <h1>{ticker}</h1>
         <p className="deck">
-          Yahoo did not return a quote for this ticker. The list is on the desk.
+          Yahoo did not return a quote for this ticker. The list is on Trillion Insights.
         </p>
         <p className="takeaway">
           <Link href="/">Back to the list</Link>
