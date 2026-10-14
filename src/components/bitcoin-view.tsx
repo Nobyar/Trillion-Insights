@@ -3,6 +3,7 @@ import { CapChart } from "@/components/chart";
 import { accentFor, Mast } from "@/components/frames";
 import { NewsPanel } from "@/components/news-panel";
 import { OptionsPanel } from "@/components/options-panel";
+import { IBIT_OPTIONS_HEADING } from "@/lib/options";
 import {
   formatBtc,
   formatChange,
@@ -78,6 +79,8 @@ export function BitcoinView({ page }: { page: BitcoinPage }) {
 
         {quote.chain ? <ChainStats chain={quote.chain} /> : null}
 
+        <OptionsPanel options={page.options} heading={IBIT_OPTIONS_HEADING} />
+
         <section>
           <h2 className="section-label">How it compares</h2>
           <p className="takeaway">
@@ -118,7 +121,6 @@ export function BitcoinView({ page }: { page: BitcoinPage }) {
           {universe.error ? <p className="note">{universe.error}</p> : null}
         </section>
 
-        <OptionsPanel options={page.options} />
         <NewsPanel news={page.news} />
 
         <section>

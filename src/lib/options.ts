@@ -379,6 +379,8 @@ export async function loadOptions(
   }
 }
 
+export const IBIT_OPTIONS_HEADING = "IBIT (iShares Bitcoin Trust) options";
+
 export function expiryLabel(expiry: string): string {
   return formatExpiry(expiry);
 }
