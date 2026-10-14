@@ -1,5 +1,5 @@
 const UA =
-  "Mozilla/5.0 (compatible; TrillionDesk/1.0; +https://localhost; market-data)";
+  "Mozilla/5.0 (compatible; TrillionInsights/1.0; +https://localhost; market-data)";
 
 type Session = { cookie: string; crumb: string; expires: number };
 

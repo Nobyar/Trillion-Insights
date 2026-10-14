@@ -4,10 +4,16 @@ import { accentFor, Mast } from "@/components/frames";
 import { NewsPanel } from "@/components/news-panel";
 import { OptionsPanel } from "@/components/options-panel";
 import {
+  formatBtc,
   formatChange,
+  formatCompact,
   formatDay,
+  formatBytes,
+  formatHashrate,
+  formatInteger,
   formatMoney,
   formatPrice,
+  formatSatVb,
   formatWhen,
   lineGap,
   rankLabel,
@@ -15,7 +21,7 @@ import {
 } from "@/lib/format";
 import type { BitcoinPage } from "@/lib/load";
 import { companyHref } from "@/lib/slug";
-import type { Quote } from "@/lib/types";
+import type { BitcoinChain, Quote } from "@/lib/types";
 
 export function BitcoinView({ page }: { page: BitcoinPage }) {
   const { quote, universe } = page;
@@ -64,7 +70,13 @@ export function BitcoinView({ page }: { page: BitcoinPage }) {
               <dd>{universe.members.length ? `#${bigger.length + 1}` : "—"}</dd>
             </div>
           </dl>
+          <p className="fine">
+            Data: <a href="https://timechainstats.com/">timechainstats.com</a>
+            {quote.source === "timechainstats.com" ? null : ` · this quote is from ${quote.source}`}
+          </p>
         </article>
+
+        {quote.chain ? <ChainStats chain={quote.chain} /> : null}
 
         <section>
           <h2 className="section-label">How it compares</h2>
@@ -221,6 +233,78 @@ function CompareRow({
       <span className="sub">{lineGap(cap)}</span>
     </Link>
   );
+}
+
+function ChainStats({ chain }: { chain: BitcoinChain }) {
+  const cells = chainCells(chain);
+  if (!cells.length) return null;
+  return (
+    <section>
+      <h2 className="section-label">Facts & figures</h2>
+      <dl className="levels">
+        {cells.map((cell) => (
+          <div key={cell.label}>
+            <dt>{cell.label}</dt>
+            <dd>{cell.value}</dd>
+          </div>
+        ))}
+      </dl>
+      <p className="fine">
+        Data: <a href="https://timechainstats.com/">timechainstats.com</a>
+      </p>
+    </section>
+  );
+}
+
+function chainCells(chain: BitcoinChain): Array<{ label: string; value: string }> {
+  const cells: Array<{ label: string; value: string }> = [];
+  if (chain.blockHeight != null) {
+    cells.push({ label: "Block height", value: formatInteger(chain.blockHeight) });
+  }
+  if (chain.hashrateEhs != null) {
+    cells.push({ label: "Hashrate", value: formatHashrate(chain.hashrateEhs) });
+  }
+  if (chain.difficulty != null) {
+    cells.push({ label: "Difficulty", value: formatCompact(chain.difficulty) });
+  }
+  if (chain.supplyBtc != null) {
+    const mined =
+      chain.percentMined != null ? ` · ${chain.percentMined.toFixed(2)}% mined` : "";
+    cells.push({ label: "Supply", value: `${formatBtc(chain.supplyBtc)}${mined}` });
+  }
+  const halving = halvingLabel(chain);
+  if (halving) cells.push({ label: "Next halving", value: halving });
+  if (chain.medianFeeUsd != null) {
+    cells.push({ label: "Median fee", value: formatPrice(chain.medianFeeUsd, "USD") });
+  }
+  if (chain.fastestFeeSat != null) {
+    cells.push({ label: "Fastest fee", value: formatSatVb(chain.fastestFeeSat) });
+  }
+  if (chain.mempoolCount != null || chain.mempoolBytes != null) {
+    const parts = [
+      chain.mempoolCount != null ? `${formatInteger(chain.mempoolCount)} tx` : null,
+      chain.mempoolBytes != null ? formatBytes(chain.mempoolBytes) : null,
+    ].filter((part): part is string => Boolean(part));
+    cells.push({ label: "Mempool", value: parts.join(" · ") });
+  }
+  if (chain.nodes != null) {
+    cells.push({ label: "Nodes", value: formatInteger(chain.nodes) });
+  }
+  if (chain.transactions24h != null) {
+    cells.push({
+      label: "Transactions",
+      value: `${formatInteger(chain.transactions24h)} / 24h`,
+    });
+  }
+  return cells;
+}
+
+function halvingLabel(chain: BitcoinChain): string | null {
+  const when = chain.halvingAt ? formatDay(chain.halvingAt) : null;
+  const blocks =
+    chain.blocksToHalving != null ? `${formatInteger(chain.blocksToHalving)} blocks` : null;
+  const parts = [when, blocks].filter((part): part is string => Boolean(part));
+  return parts.length ? parts.join(" · ") : null;
 }
 
 function ranked(cap: number, members: Quote[]) {

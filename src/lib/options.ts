@@ -8,6 +8,9 @@ type CatalogEntry = {
   enabled: boolean;
   asOf: string | null;
   label: string;
+  kind: string | null;
+  sessionDate: string | null;
+  sessionsBehind: number | null;
 };
 
 type Catalog = {
@@ -92,11 +95,13 @@ function heaviest(strikes: Record<string, unknown>[]): StrikeRow[] {
     net: num(strike.net_gex),
     call: num(strike.call_gex),
     put: num(strike.put_gex),
+    callOi: num(strike.call_oi),
+    putOi: num(strike.put_oi),
   }));
   return rows
     .filter((row) => Number.isFinite(row.strike))
     .sort((a, b) => Math.abs(b.net ?? 0) - Math.abs(a.net ?? 0))
-    .slice(0, 6)
+    .slice(0, 12)
     .sort((a, b) => a.strike - b.strike);
 }
 
@@ -127,14 +132,16 @@ export function parseBoard(payload: unknown): {
           unknown
         >[])
       : [];
+    const levels = asRecord(row.levels);
     expirations.push({
       expiry,
-      netGamma: num(row.net_gex ?? row.netGamma),
-      callWall: strikeOf(row.call_wall ?? row.callWall ?? row.posStrike),
-      putWall: strikeOf(row.put_wall ?? row.putWall ?? row.negStrike),
-      flip: strikeOf(row.gex_flip ?? row.flip ?? row.zero_gamma),
+      netGamma: num(row.net_gex ?? row.netGamma ?? row.total_gex),
+      callWall: strikeOf(row.call_wall ?? row.callWall ?? row.posStrike ?? levels?.call_wall),
+      putWall: strikeOf(row.put_wall ?? row.putWall ?? row.negStrike ?? levels?.put_wall),
+      flip: strikeOf(row.gex_flip ?? row.flip ?? row.zero_gamma ?? levels?.zero_gamma),
       callOi: num(row.call_oi) ?? sumOi(strikes, "call_oi"),
       putOi: num(row.put_oi) ?? sumOi(strikes, "put_oi"),
+      forward: num(row.forward),
       strikes: heaviest(strikes),
     });
   }
@@ -154,7 +161,7 @@ async function loadCatalog(): Promise<Catalog> {
   }
   try {
     const res = await fetch(`${ORIGIN}/v1/options/meta`, {
-      headers: { Accept: "application/json", "User-Agent": "TrillionDesk/1.0" },
+      headers: { Accept: "application/json", "User-Agent": "TrillionInsights/1.0" },
       cache: "no-store",
     });
     if (!res.ok) throw new Error(`DudeDiligence catalog answered ${res.status}.`);
@@ -164,6 +171,9 @@ async function loadCatalog(): Promise<Catalog> {
         enabled?: boolean;
         latest_as_of?: string;
         label?: string;
+        kind?: string;
+        session_date?: string;
+        sessions_behind?: number;
       }>;
     };
     const bySymbol = new Map<string, CatalogEntry>();
@@ -174,6 +184,12 @@ async function loadCatalog(): Promise<Catalog> {
         enabled: Boolean(row.enabled),
         asOf: row.latest_as_of ?? null,
         label: row.label ?? row.symbol,
+        kind: row.kind ?? null,
+        sessionDate: row.session_date ?? null,
+        sessionsBehind:
+          typeof row.sessions_behind === "number" && Number.isFinite(row.sessions_behind)
+            ? row.sessions_behind
+            : null,
       });
     }
     const value = { bySymbol, error: null };
@@ -188,7 +204,7 @@ async function loadCatalog(): Promise<Catalog> {
 function sessionHeaders(): { headers: HeadersInit; configured: boolean } {
   const headers: Record<string, string> = {
     Accept: "application/json",
-    "User-Agent": "TrillionDesk/1.0",
+    "User-Agent": "TrillionInsights/1.0",
   };
   const cookie = process.env.DUDEDILIGENCE_COOKIE?.trim();
   const authorization = process.env.DUDEDILIGENCE_AUTHORIZATION?.trim();
@@ -222,6 +238,10 @@ export async function loadOptions(
     note,
     link: boardLink(symbol),
     catalogAsOf: entry?.asOf ?? null,
+    catalogKind: entry?.kind ?? null,
+    catalogLabel: entry?.label ?? null,
+    sessionDate: entry?.sessionDate ?? null,
+    sessionsBehind: entry?.sessionsBehind ?? null,
     asOf: null,
     spot: null,
     expirations: [] as ExpirationView[],
@@ -250,7 +270,7 @@ export async function loadOptions(
     return {
       ...base,
       status: "needs-session",
-      message: `DudeDiligence tracks ${symbol}. The catalog's last snapshot is ${asOf}. The five-expiry gamma board is GET /v1/options/gex/${symbol}?expiries=5, and that route answers 401 without a signed-in session ("Gamma Exposure needs a signed-in account."). Set DUDEDILIGENCE_COOKIE or DUDEDILIGENCE_AUTHORIZATION, then refresh. The chain is not invented here.`,
+      message: `DudeDiligence lists ${symbol} in the public catalog. The last snapshot is ${asOf}. Strikes and gamma for the next five expirations are GET /v1/options/gex/${symbol}?expiries=5, which answers 401 without a signed-in session. Set DUDEDILIGENCE_COOKIE or DUDEDILIGENCE_AUTHORIZATION locally, or the same names in the Vercel project environment, then refresh. The chain is not filled in from anywhere else.`,
     };
   }
 

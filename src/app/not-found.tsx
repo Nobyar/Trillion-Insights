@@ -6,7 +6,7 @@ export default function NotFound() {
     <PageFrame>
       <div className="rules" aria-hidden="true" />
       <p className="kicker">Missing</p>
-      <h1>That page is not on the desk.</h1>
+      <h1>That page is not on Trillion Insights.</h1>
       <p className="deck">
         <Link href="/">Back to the list</Link>
       </p>

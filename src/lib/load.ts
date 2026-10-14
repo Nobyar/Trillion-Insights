@@ -1,10 +1,19 @@
 import { loadBitcoinQuote } from "@/lib/bitcoin";
+import { loadCompanyFacts } from "@/lib/facts";
 import { loadQuote, loadUniverse } from "@/lib/market";
 import { loadNews } from "@/lib/news";
 import { loadOptions } from "@/lib/options";
 import { newsQueries, profileFor } from "@/lib/profiles";
 import { loadBitcoinSeries, loadScaledSeries } from "@/lib/series";
-import type { BitcoinQuote, HistorySeries, NewsBlock, OptionsView, Quote, Universe } from "@/lib/types";
+import type {
+  BitcoinQuote,
+  CompanyFacts,
+  HistorySeries,
+  NewsBlock,
+  OptionsView,
+  Quote,
+  Universe,
+} from "@/lib/types";
 
 export type DeskData = {
   universe: Universe;
@@ -33,6 +42,7 @@ export type CompanyPage = {
   options: OptionsView;
   series: HistorySeries;
   profile: ReturnType<typeof profileFor>;
+  facts: CompanyFacts;
 };
 
 export async function loadCompanyPage(symbol: string): Promise<CompanyPage | null> {
@@ -43,12 +53,13 @@ export async function loadCompanyPage(symbol: string): Promise<CompanyPage | nul
   const quote = fromList ?? (await loadQuote(symbol));
   if (!quote) return null;
   const profile = profileFor(quote.symbol, quote.legalName);
-  const [news, options, series] = await Promise.all([
+  const [news, options, series, facts] = await Promise.all([
     loadNews(profile.name, newsQueries(quote.symbol, profile.name)),
     loadOptions(quote.symbol),
     loadScaledSeries(quote.symbol, quote.marketCapUsd),
+    loadCompanyFacts(quote.symbol),
   ]);
-  return { quote, universe, news, options, series, profile };
+  return { quote, universe, news, options, series, profile, facts };
 }
 
 export type BitcoinPage = {
@@ -73,7 +84,7 @@ export async function loadBitcoinPage(): Promise<BitcoinPage> {
       "IBIT",
       "Spot bitcoin is not an options underlying on DudeDiligence. The board below is IBIT, the iShares Bitcoin Trust, which is the listed contract the site carries for bitcoin.",
     ),
-    loadBitcoinSeries(quote.marketCapUsd),
+    loadBitcoinSeries(quote.marketCapUsd, quote.source),
   ]);
   return {
     quote,

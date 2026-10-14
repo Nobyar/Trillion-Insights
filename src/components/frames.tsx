@@ -32,11 +32,12 @@ export function PageFrame({ children }: { children: ReactNode }) {
     <div className="sheet">
       {children}
       <footer className="footer">
-        Not financial advice. Dollar market caps are Yahoo Finance, converted when the
-        listing is not in dollars. Bitcoin&apos;s live quote is CoinGecko, with CoinPaprika
-        if that fails; the long series is Blockchain.com. Headlines are Yahoo Finance.
-        Options, when a session is set, are DudeDiligence.{" "}
-        <a href="https://dudediligence.club">dudediligence.club</a>
+        Not financial advice. Dollar market caps for companies are Yahoo Finance, converted
+        when the listing is not in dollars. Bitcoin&apos;s price, market cap, and chain stats
+        come from <a href="https://timechainstats.com/">timechainstats.com</a>. If that board
+        does not answer, the quote falls back to CoinGecko, then CoinPaprika. The market-cap
+        history is Blockchain.com. Headlines are Yahoo Finance. Options, when a session is
+        set, are DudeDiligence. <a href="https://dudediligence.club">dudediligence.club</a>
       </footer>
     </div>
   );

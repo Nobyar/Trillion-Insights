@@ -24,7 +24,7 @@ export function DeskView({ desk }: { desk: DeskData }) {
     <>
       <Mast
         current="list"
-        kicker="The trillion desk"
+        kicker="Trillion Insights"
         edition="Live"
         title={
           <>

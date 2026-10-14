@@ -21,7 +21,7 @@ const PROFILES: Record<string, Profile> = {
     crossedShort: "May 2023",
     story: [
       "Jensen Huang, Chris Malachowsky, and Curtis Priem started NVIDIA in 1993 to make chips that could draw 3D graphics. The GeForce line won the PC gaming market. CUDA, released in 2006, let developers run general work on those same chips, which is the thread that later tied the company to scientific computing and then to training neural nets.",
-      "The data-center business overtook gaming as hyperscalers bought GPUs for AI. NVIDIA first closed above $1 trillion on May 30, 2023, then passed $2 trillion in February 2024 and $3 trillion that June. By the autumn of 2026 the live quote is the thing that keeps it at the top of this desk. The chart is a scaled price path, not a filing of historical share counts.",
+      "The data-center business overtook gaming as hyperscalers bought GPUs for AI. NVIDIA first closed above $1 trillion on May 30, 2023, then passed $2 trillion in February 2024 and $3 trillion that June. By the autumn of 2026 the live quote is the thing that keeps it at the top of Trillion Insights. The chart is a scaled price path, not a filing of historical share counts.",
     ],
     milestones: [
       { when: "1993", text: "Founded in Santa Clara." },
@@ -63,7 +63,7 @@ const PROFILES: Record<string, Profile> = {
     crossedShort: "Jan 2020",
     story: [
       "Larry Page and Sergey Brin founded Google in 1998. Search advertising became the economic engine; YouTube, Android, and later Google Cloud sat beside it. In 2015 the listed company reorganized as Alphabet, with Google as the largest subsidiary and a set of other bets, including Waymo, kept in a separate bucket.",
-      "This desk counts the company once, on the Class A line GOOGL, and drops the Class C line so the same market cap is not shown twice. Alphabet first cleared $1 trillion on January 16, 2020. Search and YouTube still fund the company; cloud and the AI build-out are what the recent tape argues about.",
+      "Trillion Insights counts the company once, on the Class A line GOOGL, and drops the Class C line so the same market cap is not shown twice. Alphabet first cleared $1 trillion on January 16, 2020. Search and YouTube still fund the company; cloud and the AI build-out are what the recent tape argues about.",
     ],
     milestones: [
       { when: "1998", text: "Google founded." },
@@ -123,7 +123,7 @@ const PROFILES: Record<string, Profile> = {
     crossedShort: "2024",
     story: [
       "Morris Chang founded Taiwan Semiconductor Manufacturing Company in 1987 as a pure-play foundry: it would make chips designed by other firms and compete with none of its customers. That bargain is why Apple, NVIDIA, AMD, and Broadcom can all be customers at once. The most advanced process nodes are the scarce input in the current electronics cycle.",
-      "This desk uses the US listing TSM. Yahoo's dollar market cap on that line matches the company figure other public rankings quote, so the Taipei line is not added beside it. TSMC's market cap moved through $1 trillion during 2024 as the AI foundry cycle re-rated the leading edge. The chart is the ADR price scaled to today's dollar cap.",
+      "Trillion Insights uses the US listing TSM. Yahoo's dollar market cap on that line matches the company figure other public rankings quote, so the Taipei line is not added beside it. TSMC's market cap moved through $1 trillion during 2024 as the AI foundry cycle re-rated the leading edge. The chart is the ADR price scaled to today's dollar cap.",
     ],
     milestones: [
       { when: "1987", text: "Founded in Hsinchu by Morris Chang." },
@@ -143,7 +143,7 @@ const PROFILES: Record<string, Profile> = {
     crossedShort: "2026",
     story: [
       "Elon Musk founded Space Exploration Technologies in 2002 to cut the cost of reaching orbit. Falcon 1 failed three times before it flew. Falcon 9, first-stage landing, Dragon, and the crew flights for NASA turned reuse from a demo into the way the company launches. Starlink is the other half of the business: a satellite constellation that sells connectivity, and that also fills the launch manifest.",
-      "Yahoo lists the company as Space Exploration Technologies under SPCX, and the live market cap is what puts it on this desk. Public roundups place the first trillion-dollar mark in 2026, after the listing. Starship is the next vehicle; it is not, by itself, the market cap. History before the listing will not appear as a long price series, because there was no public price.",
+      "Yahoo lists the company as Space Exploration Technologies under SPCX, and the live market cap is what puts it on Trillion Insights. Public roundups place the first trillion-dollar mark in 2026, after the listing. Starship is the next vehicle; it is not, by itself, the market cap. History before the listing will not appear as a long price series, because there was no public price.",
     ],
     milestones: [
       { when: "2002", text: "Founded in El Segundo, later Hawthorne." },
@@ -203,7 +203,7 @@ const PROFILES: Record<string, Profile> = {
     crossedShort: "Dec 2019",
     story: [
       "The Arabian American Oil Company began as a 1933 concession. It became Aramco, then the Saudi state took full ownership by 1980. The reserves under that corporate shell are the reason the market cap was enormous on day one of public trading. The company produces, refines, and ships crude, and it sells natural gas into the kingdom's power and chemicals system.",
-      "Aramco listed on the Tadawul on December 11, 2019, and opened already above $1 trillion, briefly the largest public company in the world. This desk converts the riyal market cap to dollars with Yahoo's SARUSD rate. There is no US share class in the count. DudeDiligence's options catalog does not list 2222.SR.",
+      "Aramco listed on the Tadawul on December 11, 2019, and opened already above $1 trillion, briefly the largest public company in the world. Trillion Insights converts the riyal market cap to dollars with Yahoo's SARUSD rate. There is no US share class in the count. DudeDiligence's options catalog does not list 2222.SR.",
     ],
     milestones: [
       { when: "1933", text: "The Saudi concession is signed." },
@@ -222,7 +222,7 @@ const PROFILES: Record<string, Profile> = {
     crossedShort: "Oct 2021",
     story: [
       "Martin Eberhard and Marc Tarpenning founded Tesla in 2003; Elon Musk led the Series A and later became chief executive. The Roadster proved a battery car could be desirable. The Model S, Model 3, and Model Y made it a volume manufacturer, with a second business in storage and a long argument about autonomy and robots that the market sometimes prices and sometimes does not.",
-      "Tesla first closed above $1 trillion on October 25, 2021, then spent long stretches below the line. It is on this desk only when the live market cap says so. The headquarters is now in Austin; the factory story runs through Fremont, Shanghai, Berlin, and Texas.",
+      "Tesla first closed above $1 trillion on October 25, 2021, then spent long stretches below the line. It is on Trillion Insights only when the live market cap says so. The headquarters is now in Austin; the factory story runs through Fremont, Shanghai, Berlin, and Texas.",
     ],
     milestones: [
       { when: "2003", text: "Founded in San Carlos." },
@@ -242,7 +242,7 @@ const PROFILES: Record<string, Profile> = {
     crossedShort: "2026",
     story: [
       "Lee Byung-chul founded the Samsung trading company in 1938. Samsung Electronics, started in 1969, is the piece that matters for this list: memory chips, foundry, phones, displays, and appliances. It is the largest memory maker alongside SK hynix and Micron, and it is also a consumer brand in a way those two are not.",
-      "The common share, 005930.KS, is the line this desk uses. The won market cap is converted at Yahoo's KRWUSD rate. The preferred line is not added. In 2026 the memory cycle lifted that dollar value through $1 trillion. This page does not pin a first session, because the public tape is noisier than Apple's 2018 close. DudeDiligence does not list a Seoul options board for it.",
+      "The common share, 005930.KS, is the line Trillion Insights uses. The won market cap is converted at Yahoo's KRWUSD rate. The preferred line is not added. In 2026 the memory cycle lifted that dollar value through $1 trillion. This page does not pin a first session, because the public tape is noisier than Apple's 2018 close. DudeDiligence does not list a Seoul options board for it.",
     ],
     milestones: [
       { when: "1938", text: "Samsung trading company founded." },
@@ -262,7 +262,7 @@ const PROFILES: Record<string, Profile> = {
     crossedShort: "Aug 2024",
     story: [
       "Berkshire Hathaway began as a New England textile company. Warren Buffett took control in 1965 and used it as a holder for insurance companies whose float could be invested, then for wholly owned businesses and a concentrated stock portfolio. The textile mill is long gone. The economic engine is insurance, the railroad, energy, manufacturing, and the equity book.",
-      "The Class B share is the row on this desk. Class A is the same company and is dropped so the cap is not counted twice. Berkshire's market cap moved through $1 trillion in August 2024. DudeDiligence's options catalog does not list BRK-B, so the options section on this page says so instead of borrowing another name's chain.",
+      "The Class B share is the row on Trillion Insights. Class A is the same company and is dropped so the cap is not counted twice. Berkshire's market cap moved through $1 trillion in August 2024. DudeDiligence's options catalog does not list BRK-B, so the options section on this page says so instead of borrowing another name's chain.",
     ],
     milestones: [
       { when: "1839", text: "The textile predecessor is founded." },
@@ -302,7 +302,7 @@ const PROFILES: Record<string, Profile> = {
     crossedShort: "2025",
     story: [
       "Colonel Eli Lilly founded the company in Indianapolis in 1876. It spent the twentieth century as a broad pharmaceutical house: insulin in the 1920s, then antibiotics, Prozac, and a long diabetes franchise. The drug that re-rated the equity is tirzepatide, sold as Mounjaro for diabetes and Zepbound for weight loss.",
-      "Lilly's market cap moved through $1 trillion during 2025 on that franchise and on the expectation that the same class of medicines would stay supply-constrained. It is the rare non-technology name on this desk. The chart scales the share price to today's dollar cap and does not try to reconstruct a century of splits by hand.",
+      "Lilly's market cap moved through $1 trillion during 2025 on that franchise and on the expectation that the same class of medicines would stay supply-constrained. It is the rare non-technology name on Trillion Insights. The chart scales the share price to today's dollar cap and does not try to reconstruct a century of splits by hand.",
     ],
     milestones: [
       { when: "1876", text: "Founded in Indianapolis." },
@@ -322,7 +322,7 @@ const PROFILES: Record<string, Profile> = {
     crossedShort: "See the quote",
     story: [
       "SK hynix traces to Hyundai Electronics in 1983 and became Hynix after the Asian financial crisis, then part of the SK group. It is a memory company: DRAM, NAND, and high-bandwidth memory sold into the same AI servers that re-rated Micron and Samsung.",
-      "This desk uses the Seoul listing, 000660.KS, converted from won to dollars. Yahoo's US line SKHY reports a share count ten times the Seoul count, which inflates that dollar cap; counting both would also double the company. The Seoul figure is the one that has to clear $1 trillion. If it does, the name enters on its own. DudeDiligence lists SKHY, not the Seoul ticker, and the options section follows whatever symbol this page is actually showing.",
+      "Trillion Insights uses the Seoul listing, 000660.KS, converted from won to dollars. Yahoo's US line SKHY reports a share count ten times the Seoul count, which inflates that dollar cap; counting both would also double the company. The Seoul figure is the one that has to clear $1 trillion. If it does, the name enters on its own. DudeDiligence lists SKHY, not the Seoul ticker, and the options section follows whatever symbol this page is actually showing.",
     ],
     milestones: [
       { when: "1983", text: "Hyundai Electronics founded." },
@@ -432,7 +432,7 @@ export function profileFor(symbol: string, legalName: string): Profile {
     crossed: "Decided by the live quote",
     crossedShort: "Live quote",
     story: [
-      `${legalName} entered the monitored set because its live dollar market cap can clear one trillion. A longer desk note, with founding, products, and the session it first crossed, is not written for this ticker yet.`,
+      `${legalName} entered the monitored set because its live dollar market cap can clear one trillion. A longer note, with founding, products, and the session it first crossed, is not written for this ticker yet.`,
       "The quote, the scaled chart, the headlines, and the options section still run from their sources. Membership is not stored. If the cap falls under $1 trillion, the name leaves the main list on the next refresh.",
     ],
     milestones: [],

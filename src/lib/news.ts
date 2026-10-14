@@ -31,7 +31,7 @@ async function searchNews(query: string): Promise<NewsItem[]> {
   url.searchParams.set("quotesCount", "0");
   const res = await fetch(url, {
     headers: {
-      "User-Agent": "Mozilla/5.0 (compatible; TrillionDesk/1.0)",
+      "User-Agent": "Mozilla/5.0 (compatible; TrillionInsights/1.0)",
       Accept: "application/json",
     },
     cache: "no-store",
