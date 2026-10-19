@@ -25,7 +25,7 @@ Each company page has:
 - options for the next five expirations, from DudeDiligence when the server can sign in
 - a short history of how the company got to a trillion-dollar valuation, and a market-cap chart
 
-Bitcoin has the same sections. Its options are the **IBIT** (iShares Bitcoin Trust) board, which is the contract DudeDiligence lists for bitcoin. Spot BTC is not an options underlying there.
+Bitcoin has the same sections. The home Bitcoin section and the Bitcoin page both show the **IBIT** (iShares Bitcoin Trust) board for the next five expirations, through the same DudeDiligence sign-in as a company page. Spot BTC is not an options underlying there.
 
 ## Data sources
 

@@ -19,10 +19,14 @@ export type DeskData = {
   universe: Universe;
   bitcoin: BitcoinQuote | null;
   bitcoinError: string | null;
+  bitcoinOptions: OptionsView;
 };
 
+const IBIT_OPTIONS_NOTE =
+  "Spot bitcoin is not an options underlying on DudeDiligence. This board is IBIT (iShares Bitcoin Trust), the listed contract the site carries for bitcoin.";
+
 export async function loadDesk(): Promise<DeskData> {
-  const [universe, bitcoinResult] = await Promise.all([
+  const [universe, bitcoinResult, bitcoinOptions] = await Promise.all([
     loadUniverse(),
     loadBitcoinQuote().then(
       (bitcoin) => ({ bitcoin, bitcoinError: null as string | null }),
@@ -31,8 +35,9 @@ export async function loadDesk(): Promise<DeskData> {
         bitcoinError: error instanceof Error ? error.message : "Bitcoin quote failed.",
       }),
     ),
+    loadOptions("BTC", "IBIT", IBIT_OPTIONS_NOTE),
   ]);
-  return { universe, ...bitcoinResult };
+  return { universe, ...bitcoinResult, bitcoinOptions };
 }
 
 export type CompanyPage = {
@@ -79,11 +84,7 @@ export async function loadBitcoinPage(): Promise<BitcoinPage> {
   const quote = desk.bitcoin;
   const [news, options, series] = await Promise.all([
     loadNews("Bitcoin", newsQueries("BTC", "Bitcoin")),
-    loadOptions(
-      "BTC",
-      "IBIT",
-      "Spot bitcoin is not an options underlying on DudeDiligence. The board below is IBIT, the iShares Bitcoin Trust, which is the listed contract the site carries for bitcoin.",
-    ),
+    loadOptions("BTC", "IBIT", IBIT_OPTIONS_NOTE),
     loadBitcoinSeries(quote.marketCapUsd, quote.source),
   ]);
   return {
