@@ -6,18 +6,134 @@ import { createHash, randomBytes, randomUUID } from "node:crypto";
  * server posts the same username/password form the browser shows at /u/login,
  * exchanges the code, then opens POST /v1/session with the ID token.
  *
- * The Auth0 domain and client id are public values from the site bundle, not secrets.
+ * The Auth0 domain and client id are public values in the site bundle, not secrets.
+ * They are read from that bundle on each cold start. DudeDiligence moved the
+ * issuer to a custom domain; a token from the old tenant is rejected with
+ * "token is from another issuer".
  * A captcha, bot-detection interstitial, or MFA page cannot be completed here.
  */
 
 const ORIGIN = "https://dudediligence.club";
-const AUTH0_HOST = "dev-70ichaoc6w3etldz.us.auth0.com";
-const AUTH0_CLIENT_ID = "8edkjjfe3t2NFmSHA9bOpr7MKLSpEWMY";
+/** Used only when the live bundle cannot be read. Matches the current custom domain. */
+const FALLBACK_AUTH = {
+  host: "auth.dudediligence.club",
+  clientId: "8edkjjfe3t2NFmSHA9bOpr7MKLSpEWMY",
+};
 const REDIRECT_URI = ORIGIN;
 const BROWSER_UA =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
 
 const clientId = randomUUID();
+
+export type AuthConfig = {
+  host: string;
+  clientId: string;
+};
+
+let authCached: { at: number; value: AuthConfig } | null = null;
+let authPending: Promise<AuthConfig> | null = null;
+
+function validHost(host: string): boolean {
+  return /^[a-z0-9.-]+\.[a-z]{2,}$/i.test(host) && !host.includes("..");
+}
+
+function validClientId(id: string): boolean {
+  return /^[A-Za-z0-9_-]{10,80}$/.test(id);
+}
+
+function readAuthValue(source: string, token: string, near: number): string | null {
+  const quoted = token.match(/^["']([^"']+)["']$/);
+  if (quoted) return quoted[1];
+  if (!/^[A-Za-z_$][\w$]*$/.test(token)) return null;
+  const re = new RegExp(String.raw`(?:^|[^\w$])${token}\s*=\s*["']([^"']+)["']`, "g");
+  let found: string | null = null;
+  let best = Number.POSITIVE_INFINITY;
+  for (const match of source.matchAll(re)) {
+    const at = match.index ?? 0;
+    const distance = Math.abs(at - near);
+    if (distance < best) {
+      best = distance;
+      found = match[1];
+    }
+  }
+  return found;
+}
+
+/** Pulls the Auth0 SPA `domain` and `clientId` out of a DudeDiligence bundle. */
+export function discoverAuthConfigFromSource(source: string): AuthConfig | null {
+  const patterns = [
+    /\{[^{}]{0,500}?\bdomain\s*:\s*([^,}\s]+)[^{}]{0,500}?\bclientId\s*:\s*([^,}\s]+)/,
+    /\{[^{}]{0,500}?\bclientId\s*:\s*([^,}\s]+)[^{}]{0,500}?\bdomain\s*:\s*([^,}\s]+)/,
+  ];
+  for (const [index, pattern] of patterns.entries()) {
+    const match = source.match(pattern);
+    if (!match || match.index == null) continue;
+    const host = readAuthValue(source, index === 0 ? match[1] : match[2], match.index);
+    const client = readAuthValue(source, index === 0 ? match[2] : match[1], match.index);
+    if (host && client && validHost(host) && validClientId(client)) {
+      return { host, clientId: client };
+    }
+  }
+  return null;
+}
+
+async function discoverAuthConfig(): Promise<AuthConfig | null> {
+  const home = await fetch(`${ORIGIN}/`, {
+    cache: "no-store",
+    headers: { accept: "text/html", "user-agent": BROWSER_UA },
+    signal: AbortSignal.timeout(15000),
+  });
+  if (!home.ok) return null;
+  const html = await home.text();
+  const paths = [
+    ...new Set(
+      [...html.matchAll(/src="(\/_next\/static\/[^"]+\.js)"/g)].map((match) => match[1]),
+    ),
+  ];
+  for (let index = 0; index < paths.length; index += 4) {
+    const batch = paths.slice(index, index + 4);
+    const sources = await Promise.all(
+      batch.map(async (path) => {
+        try {
+          const res = await fetch(`${ORIGIN}${path}`, {
+            cache: "no-store",
+            headers: { "user-agent": BROWSER_UA },
+            signal: AbortSignal.timeout(15000),
+          });
+          return res.ok ? await res.text() : "";
+        } catch {
+          return "";
+        }
+      }),
+    );
+    for (const source of sources) {
+      const found = discoverAuthConfigFromSource(source);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
+export async function loadAuthConfig(force = false): Promise<AuthConfig> {
+  if (!force && authCached && Date.now() - authCached.at < 30 * 60 * 1000) return authCached.value;
+  if (!force && authPending) return authPending;
+  const run = discoverAuthConfig()
+    .then((found) => {
+      const value = found ?? FALLBACK_AUTH;
+      if (found) authCached = { at: Date.now(), value };
+      return value;
+    })
+    .catch(() => FALLBACK_AUTH);
+  const tracked = run.finally(() => {
+    if (authPending === tracked) authPending = null;
+  });
+  authPending = tracked;
+  return tracked;
+}
+
+export function invalidateAuthConfig(): void {
+  authCached = null;
+}
 
 export class DudeDiligenceLoginError extends Error {
   constructor(message: string) {
@@ -254,7 +370,35 @@ function loginFailure(kind: ReturnType<typeof classifyLoginHtml>, status: number
   );
 }
 
+function jwtIssuer(token: string): string | null {
+  const part = token.split(".")[1];
+  if (!part) return null;
+  try {
+    const payload = JSON.parse(Buffer.from(part, "base64url").toString("utf8")) as {
+      iss?: unknown;
+    };
+    return typeof payload.iss === "string" ? payload.iss : null;
+  } catch {
+    return null;
+  }
+}
+
 async function login(): Promise<SiteSession> {
+  const first = await loadAuthConfig();
+  try {
+    return await loginWith(first);
+  } catch (error) {
+    if (!(error instanceof DudeDiligenceLoginError) || !/another issuer/i.test(error.message)) {
+      throw error;
+    }
+    invalidateAuthConfig();
+    const fresh = await loadAuthConfig(true);
+    if (fresh.host === first.host && fresh.clientId === first.clientId) throw error;
+    return loginWith(fresh);
+  }
+}
+
+async function loginWith(config: AuthConfig): Promise<SiteSession> {
   const user = username();
   const secret = password();
   if (!user || !secret) {
@@ -267,8 +411,8 @@ async function login(): Promise<SiteSession> {
   const challenge = base64url(createHash("sha256").update(verifier).digest());
   const oauthState = base64url(randomBytes(16));
   const nonce = base64url(randomBytes(16));
-  const authorize = new URL(`https://${AUTH0_HOST}/authorize`);
-  authorize.searchParams.set("client_id", AUTH0_CLIENT_ID);
+  const authorize = new URL(`https://${config.host}/authorize`);
+  authorize.searchParams.set("client_id", config.clientId);
   authorize.searchParams.set("response_type", "code");
   authorize.searchParams.set("redirect_uri", REDIRECT_URI);
   authorize.searchParams.set("scope", "openid profile email");
@@ -287,7 +431,7 @@ async function login(): Promise<SiteSession> {
     const location = res.headers.get("location");
     if (!location) break;
     const dest = new URL(location, current);
-    if (dest.hostname !== AUTH0_HOST) {
+    if (dest.hostname !== config.host) {
       throw new DudeDiligenceLoginError(
         "Auth0 left the sign-in page before showing a username form.",
       );
@@ -315,7 +459,7 @@ async function login(): Promise<SiteSession> {
     method: "POST",
     headers: {
       "content-type": "application/x-www-form-urlencoded",
-      origin: `https://${AUTH0_HOST}`,
+      origin: `https://${config.host}`,
       referer: current,
     },
     body,
@@ -336,7 +480,7 @@ async function login(): Promise<SiteSession> {
         }
         break;
       }
-      if (dest.hostname !== AUTH0_HOST) {
+      if (dest.hostname !== config.host) {
         throw new DudeDiligenceLoginError(
           "Sign-in left Auth0 for another provider. Google sign-in cannot be completed from the server.",
         );
@@ -355,13 +499,13 @@ async function login(): Promise<SiteSession> {
     throw new DudeDiligenceLoginError("Auth0 did not return an authorization code.");
   }
 
-  const tokenRes = await fetch(`https://${AUTH0_HOST}/oauth/token`, {
+  const tokenRes = await fetch(`https://${config.host}/oauth/token`, {
     method: "POST",
     cache: "no-store",
     headers: { "content-type": "application/json", accept: "application/json" },
     body: JSON.stringify({
       grant_type: "authorization_code",
-      client_id: AUTH0_CLIENT_ID,
+      client_id: config.clientId,
       code_verifier: verifier,
       code,
       redirect_uri: REDIRECT_URI,
@@ -379,6 +523,13 @@ async function login(): Promise<SiteSession> {
       detail
         ? `Auth0 did not issue an ID token (${detail}).`
         : "Auth0 did not issue an ID token.",
+    );
+  }
+  const iss = jwtIssuer(idToken);
+  const expected = `https://${config.host}/`;
+  if (iss && iss !== expected && iss !== expected.slice(0, -1)) {
+    throw new DudeDiligenceLoginError(
+      `Auth0 issued a token from ${safePhrase(iss) ?? "an unexpected issuer"}, not ${expected}. DudeDiligence rejects that as another issuer.`,
     );
   }
 
