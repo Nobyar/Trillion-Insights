@@ -72,7 +72,7 @@ What is not public:
 - The same client calls `/v1/options/gex/{SYMBOL}/history`, `/at/{time}`, `/live`, and `POST /v1/options/refresh/{SYMBOL}`. Those are the same gated family.
 - The logged-out HTML does not include strikes, expirations, or gamma. There is nothing honest to scrape off the page.
 
-Sign-in is Auth0 Universal Login (the page titled “Log in | Dudediligence”), not a cookie you paste from your browser. The public app rejects Auth0’s password grant and cross-origin login, so the server posts the username and password form itself, exchanges the authorization code, and calls `POST /v1/session` with the ID token. It keeps that session in memory and signs in again when the token is close to expiry or the gamma route answers 401.
+Sign-in is Auth0 Universal Login (the page titled “Log in | Dudediligence”), not a cookie you paste from your browser. The public app rejects Auth0’s password grant and cross-origin login, so the server posts the username and password form itself, exchanges the authorization code, and calls `POST /v1/session` with the ID token. It keeps that session in memory and signs in again when the token is close to expiry or the gamma route answers 401. The Auth0 domain and client id are read from the live DudeDiligence page, so a move to a custom domain does not keep sending tokens from the old issuer.
 
 Set these two variables. The sign-in form labels the first field **Username**. Put that value in `DUDEDILIGENCE_EMAIL` (the account email, when that is the username). `DUDEDILIGENCE_USERNAME` is accepted only when `DUDEDILIGENCE_EMAIL` is empty.
 
